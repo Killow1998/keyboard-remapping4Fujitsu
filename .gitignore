@@ -1,0 +1,13 @@
+/target/
+/dist/
+*.deb
+*.AppImage
+.env
+.env.*
+!.env.example
+/config/
+/rules.tsv
+*.log
+
+__pycache__/
+*.pyc
