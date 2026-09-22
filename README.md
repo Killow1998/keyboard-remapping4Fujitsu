@@ -12,6 +12,18 @@ Key Layout is a small visual remapper for the unusual keys on a Japanese Fujitsu
 
 ## Install
 
+### Debian package
+
+Download the amd64 `.deb` from the GitHub Release, then install it with:
+
+```sh
+sudo apt install ./key-layout_0.1.1_amd64.deb
+```
+
+The package installs an XFCE autostart entry. The mapping watcher starts automatically at the next XFCE login and runs as that desktop user. Open **Key Layout** from the application menu to create mappings.
+
+### From source
+
 ```sh
 python3 scripts/install.py
 ```
@@ -28,6 +40,14 @@ Settings are stored in:
 ```
 
 ## Remove
+
+Restore all mappings in the app before removing a Debian installation, then run:
+
+```sh
+sudo apt remove key-layout
+```
+
+For a source installation, run:
 
 ```sh
 python3 scripts/install.py --uninstall
