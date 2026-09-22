@@ -373,7 +373,7 @@ unsafe fn refresh(u: &mut Ui) {
         .map(|r| r.original.as_str())
         .or_else(|| u.baseline.get(&u.code).map(String::as_str))
         .unwrap_or("");
-    set(u.details,&format!("Keycode {} · Original: {}\nX11 / XFCE. Modifier and Fn keys are not editable.\nUse Reapply after changing the system keyboard layout.",u.code,original));
+    set(u.details,&format!("Keycode {} · Original: {}\nX11 / XFCE. Modifier and Fn keys are not editable.\nSaved mappings are monitored and restored automatically.",u.code,original));
     let s = u
         .rules
         .iter()
@@ -706,11 +706,12 @@ fn main() {
 }
 fn start() -> Result<(), String> {
     let rules = load()?;
+    if std::env::args().any(|a| a == "--watch") {
+        return watch();
+    }
     if std::env::args().any(|a| a == "--apply") {
         std::thread::sleep(std::time::Duration::from_secs(3));
-        for (k, r) in &rules {
-            apply(*k, r)?;
-        }
+        reconcile(&rules)?;
         return Ok(());
     }
     if std::env::args().any(|a| a == "--restore") {

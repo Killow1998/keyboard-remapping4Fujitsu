@@ -1,4 +1,12 @@
-use std::{collections::BTreeMap, fs, path::PathBuf, process::Command};
+use std::{
+    collections::BTreeMap,
+    ffi::{c_char, c_int, c_uchar, c_ulong, c_void, CString},
+    fs,
+    path::PathBuf,
+    process::Command,
+    thread,
+    time::Duration,
+};
 #[derive(Clone, Debug)]
 pub struct Rule {
     pub original: String,
@@ -169,6 +177,156 @@ fn set_shortcut(r: &Rule) -> Result<(), String> {
     )
     .map(|_| ())
 }
+
+fn drifted_keycodes(current: &BTreeMap<u16, String>, rules: &Rules) -> Vec<u16> {
+    rules
+        .iter()
+        .filter_map(|(keycode, rule)| {
+            (current.get(keycode) != Some(&rule.mapped)).then_some(*keycode)
+        })
+        .collect()
+}
+
+pub fn reconcile(rules: &Rules) -> Result<usize, String> {
+    let current = maps()?;
+    let drifted = drifted_keycodes(&current, rules);
+    let mut changed = 0;
+    let mut errors = Vec::new();
+    for (keycode, rule) in rules {
+        if drifted.contains(keycode) {
+            match mapping(*keycode, &rule.mapped) {
+                Ok(()) => changed += 1,
+                Err(error) => errors.push(format!("keycode {keycode}: {error}")),
+            }
+        }
+        if let Err(error) = set_shortcut(rule) {
+            errors.push(format!("keycode {keycode} shortcut: {error}"));
+        }
+    }
+    if errors.is_empty() {
+        Ok(changed)
+    } else {
+        Err(errors.join("; "))
+    }
+}
+
+#[link(name = "libX11.so.6", kind = "dylib", modifiers = "+verbatim")]
+extern "C" {
+    fn XOpenDisplay(name: *const c_char) -> *mut c_void;
+    fn XGetKeyboardMapping(
+        display: *mut c_void,
+        first_keycode: c_uchar,
+        keycode_count: c_int,
+        keysyms_per_keycode: *mut c_int,
+    ) -> *mut c_ulong;
+    fn XStringToKeysym(name: *const c_char) -> c_ulong;
+    fn XFree(data: *mut c_void) -> c_int;
+}
+
+fn expected_keysyms(mapping: &str, width: usize) -> Result<Vec<c_ulong>, String> {
+    let mut expected = mapping
+        .split_whitespace()
+        .map(|name| {
+            if name == "NoSymbol" {
+                return Ok(0);
+            }
+            let name = CString::new(name).map_err(|error| error.to_string())?;
+            let keysym = unsafe { XStringToKeysym(name.as_ptr()) };
+            if keysym == 0 {
+                Err(format!("Unknown X11 key symbol: {}", name.to_string_lossy()))
+            } else {
+                Ok(keysym)
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if expected.len() > width {
+        return Err("Saved mapping is wider than the current X11 keymap".into());
+    }
+    expected.resize(width, 0);
+    Ok(expected)
+}
+
+fn live_drifted_keycodes(display: *mut c_void, rules: &Rules) -> Result<Vec<u16>, String> {
+    let Some(first) = rules.keys().next().copied() else {
+        return Ok(Vec::new());
+    };
+    let last = rules.keys().next_back().copied().unwrap();
+    if last > u16::from(u8::MAX) {
+        return Err(format!("Invalid X11 keycode: {last}"));
+    }
+    let count = i32::from(last - first + 1);
+    let mut width = 0;
+    let keysyms = unsafe {
+        XGetKeyboardMapping(display, first as c_uchar, count, &mut width)
+    };
+    if keysyms.is_null() {
+        return Err("Cannot read the current X11 keyboard mapping".into());
+    }
+    if width <= 0 {
+        unsafe {
+            XFree(keysyms.cast());
+        }
+        return Err("X11 returned an empty keyboard mapping".into());
+    }
+    let result = (|| {
+        let width = width as usize;
+        let mut drifted = Vec::new();
+        for (keycode, rule) in rules {
+            let expected = expected_keysyms(&rule.mapped, width)?;
+            let offset = usize::from(*keycode - first) * width;
+            let current = unsafe { std::slice::from_raw_parts(keysyms.add(offset), width) };
+            if current != expected {
+                drifted.push(*keycode);
+            }
+        }
+        Ok(drifted)
+    })();
+    unsafe {
+        XFree(keysyms.cast());
+    }
+    result
+}
+
+pub fn watch() -> Result<(), String> {
+    let display = unsafe { XOpenDisplay(std::ptr::null()) };
+    if display.is_null() {
+        return Err("Cannot open X11 display for mapping monitoring".into());
+    }
+    // XFCE can still be restoring its own keyboard layout during login.
+    thread::sleep(Duration::from_secs(3));
+    reconcile(&load()?)?;
+    let mut last_error = String::new();
+    loop {
+        thread::sleep(Duration::from_secs(1));
+        let rules = load()?;
+        match live_drifted_keycodes(display, &rules) {
+            Ok(drifted) if drifted.is_empty() => last_error.clear(),
+            Ok(_) => {
+                // Let a layout switch or GUI save finish before restoring overrides.
+                thread::sleep(Duration::from_millis(300));
+                let rules = load()?;
+                if !live_drifted_keycodes(display, &rules)?.is_empty() {
+                    match reconcile(&rules) {
+                        Ok(changed) => {
+                            eprintln!("Reapplied {changed} saved key mapping(s).");
+                            last_error.clear();
+                        }
+                        Err(error) if error != last_error => {
+                            eprintln!("Could not reapply saved mappings: {error}");
+                            last_error = error;
+                        }
+                        Err(_) => {}
+                    }
+                }
+            }
+            Err(error) if error != last_error => {
+                eprintln!("Could not inspect saved mappings: {error}");
+                last_error = error;
+            }
+            Err(_) => {}
+        }
+    }
+}
 pub fn available_launcher_symbol(
     current: &BTreeMap<u16, String>,
     bindings: &str,
@@ -267,7 +425,7 @@ pub fn startup() -> Result<(), String> {
         .replace('`', "\\`")
         .replace('$', "\\$")
         .replace('%', "%%");
-    fs::write(p.join("key-layout.desktop"),format!("[Desktop Entry]\nType=Application\nName=Key Layout mappings\nExec=\"{exe}\" --apply\nOnlyShowIn=XFCE;\nTerminal=false\n")).map_err(|e|e.to_string())
+    fs::write(p.join("key-layout.desktop"),format!("[Desktop Entry]\nType=Application\nName=Key Layout mappings\nExec=\"{exe}\" --watch\nOnlyShowIn=XFCE;\nTerminal=false\n")).map_err(|e|e.to_string())
 }
 #[cfg(test)]
 mod tests {
@@ -317,5 +475,34 @@ mod launcher_tests {
                 .join(" "),
         )]);
         assert!(available_launcher_symbol(&current, "").is_err());
+    }
+
+    #[test]
+    fn detects_only_drifted_mappings() {
+        let current = BTreeMap::from([
+            (102, "space space space space".into()),
+            (132, "yen bar yen bar".into()),
+        ]);
+        let rules = BTreeMap::from([
+            (
+                102,
+                Rule {
+                    original: "Muhenkan NoSymbol Muhenkan".into(),
+                    mapped: "space space space space".into(),
+                    command: String::new(),
+                    shortcut: String::new(),
+                },
+            ),
+            (
+                132,
+                Rule {
+                    original: "yen bar yen bar".into(),
+                    mapped: "BackSpace BackSpace BackSpace BackSpace".into(),
+                    command: String::new(),
+                    shortcut: String::new(),
+                },
+            ),
+        ]);
+        assert_eq!(drifted_keycodes(&current, &rules), vec![132]);
     }
 }
