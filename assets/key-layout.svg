@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="tile" x1="132" y1="104" x2="892" y2="936" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5268ff"/>
+      <stop offset="0.52" stop-color="#7047e8"/>
+      <stop offset="1" stop-color="#45249f"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="512" y1="72" x2="512" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="keycap" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d9d9ff"/>
+    </linearGradient>
+    <linearGradient id="keycap-face" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#efefff"/>
+    </linearGradient>
+    <filter id="tile-shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="28" stdDeviation="30" flood-color="#160c49" flood-opacity="0.42"/>
+    </filter>
+    <filter id="key-shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#241268" flood-opacity="0.38"/>
+    </filter>
+    <clipPath id="tile-clip">
+      <rect x="56" y="56" width="912" height="912" rx="220"/>
+    </clipPath>
+    <marker id="arrow-cyan" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M1 1 10 6 1 11Z" fill="#65e9ff" stroke="#ffffff" stroke-width="0.8" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrow-white" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M1 1 10 6 1 11Z" fill="#ffffff" stroke="#cabfff" stroke-width="0.8" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect x="56" y="56" width="912" height="912" rx="220" fill="url(#tile)" filter="url(#tile-shadow)"/>
+  <g clip-path="url(#tile-clip)">
+    <ellipse cx="398" cy="90" rx="520" ry="405" fill="url(#glass)"/>
+    <circle cx="853" cy="825" r="250" fill="#1f0d6b" opacity="0.16"/>
+  </g>
+  <rect x="68" y="68" width="888" height="888" rx="208" fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="8"/>
+
+  <g transform="translate(178 238) rotate(-6 158 138)" filter="url(#key-shadow)">
+    <rect x="8" y="25" width="316" height="276" rx="70" fill="#25135f" opacity="0.48"/>
+    <rect width="316" height="276" rx="70" fill="url(#keycap)" stroke="#ffffff" stroke-width="9"/>
+    <rect x="28" y="25" width="260" height="205" rx="48" fill="url(#keycap-face)" stroke="#bbb7f3" stroke-width="7"/>
+    <rect x="90" y="190" width="136" height="16" rx="8" fill="#7b64d9" opacity="0.48"/>
+  </g>
+
+  <g transform="translate(530 510) rotate(6 158 138)" filter="url(#key-shadow)">
+    <rect x="8" y="25" width="316" height="276" rx="70" fill="#25135f" opacity="0.48"/>
+    <rect width="316" height="276" rx="70" fill="url(#keycap)" stroke="#ffffff" stroke-width="9"/>
+    <rect x="28" y="25" width="260" height="205" rx="48" fill="url(#keycap-face)" stroke="#bbb7f3" stroke-width="7"/>
+    <rect x="90" y="190" width="136" height="16" rx="8" fill="#7b64d9" opacity="0.48"/>
+  </g>
+
+  <path d="M444 285 C611 242 755 310 805 430" fill="none" stroke="#23145f" stroke-opacity="0.28" stroke-width="50" stroke-linecap="round"/>
+  <path d="M444 285 C611 242 755 310 805 430" fill="none" stroke="#65e9ff" stroke-width="34" stroke-linecap="round" marker-end="url(#arrow-cyan)"/>
+  <path d="M584 770 C420 810 275 730 231 609" fill="none" stroke="#23145f" stroke-opacity="0.28" stroke-width="50" stroke-linecap="round"/>
+  <path d="M584 770 C420 810 275 730 231 609" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round" marker-end="url(#arrow-white)"/>
+
+  <circle cx="846" cy="188" r="23" fill="#ffffff" opacity="0.66"/>
+  <circle cx="790" cy="161" r="10" fill="#65e9ff" opacity="0.86"/>
+</svg>

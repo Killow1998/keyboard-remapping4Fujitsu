@@ -1,5 +1,7 @@
 # Key Layout
 
+<p align="center"><img src="assets/key-layout.svg" alt="Key Layout icon" width="128"></p>
+
 **Experimental — tested only on a Fujitsu LIFEBOOK U9310 laptop with a Japanese keyboard, running XFCE on X11. Other laptops and desktop environments have not been tested.**
 
 Key Layout is a small visual remapper for the unusual keys on a Japanese Fujitsu U9310 keyboard. It can make a physical key act like another key or launch a desktop application. The keyboard view shows the original key and its saved action.
@@ -17,7 +19,7 @@ Key Layout is a small visual remapper for the unusual keys on a Japanese Fujitsu
 Download the amd64 `.deb` from the GitHub Release, then install it with:
 
 ```sh
-sudo apt install ./key-layout_0.1.1_amd64.deb
+sudo apt install ./key-layout_0.1.2_amd64.deb
 ```
 
 The package installs an XFCE autostart entry. The mapping watcher starts automatically at the next XFCE login and runs as that desktop user. Open **Key Layout** from the application menu to create mappings.

@@ -13,6 +13,7 @@ extern "C" {
     fn gtk_main_quit();
     fn gtk_window_new(t: c_int) -> W;
     fn gtk_window_set_title(w: W, s: *const c_char);
+    fn gtk_window_set_icon_name(w: W, s: *const c_char);
     fn gtk_window_set_default_size(w: W, x: c_int, y: c_int);
     fn gtk_container_add(w: W, c: W);
     fn gtk_container_set_border_width(w: W, n: u32);
@@ -731,6 +732,7 @@ fn start() -> Result<(), String> {
         }
         let window = gtk_window_new(0);
         gtk_window_set_title(window, cs("Key Layout").as_ptr());
+        gtk_window_set_icon_name(window, cs("key-layout").as_ptr());
         gtk_window_set_default_size(window, 1140, 640);
         gtk_container_set_border_width(window, 20);
         let root = gtk_box_new(1, 12);

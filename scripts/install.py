@@ -19,6 +19,7 @@ def paths():
         data / "applications/key-layout.desktop",
         config / "autostart/key-layout.desktop",
         config / "key-layout/rules.tsv",
+        data / "icons/hicolor/scalable/apps/key-layout.svg",
     )
 
 
@@ -36,12 +37,15 @@ def install(no_build):
     source = ROOT / "target/release/key-layout"
     if not source.is_file():
         raise RuntimeError("Build first with cargo build --release --locked.")
-    binary, launcher, _, _ = paths()
+    binary, launcher, _, _, icon = paths()
     binary.parent.mkdir(parents=True, exist_ok=True)
     temporary = binary.with_suffix(".new")
     shutil.copy2(source, temporary)
     temporary.chmod(0o755)
     temporary.replace(binary)
+    icon.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ROOT / "assets/key-layout.svg", icon)
+    icon.chmod(0o644)
     launcher.parent.mkdir(parents=True, exist_ok=True)
     launcher.write_text(
         "[Desktop Entry]\n"
@@ -49,7 +53,7 @@ def install(no_build):
         "Name=Key Layout\n"
         "Comment=Customize keyboard keys\n"
         f"Exec={desktop_argument(str(binary))}\n"
-        "Icon=input-keyboard\n"
+        "Icon=key-layout\n"
         "Terminal=false\n"
         "Categories=Settings;HardwareSettings;\n",
         encoding="utf-8",
@@ -58,13 +62,13 @@ def install(no_build):
 
 
 def uninstall():
-    binary, launcher, autostart, rules = paths()
+    binary, launcher, autostart, rules, icon = paths()
     if rules.exists() and rules.read_text(encoding="utf-8").strip():
         if not binary.is_file():
             raise RuntimeError("Reinstall the app, then restore your mappings before uninstalling.")
         # Stop on failure: active mappings must remain recoverable.
         subprocess.run([str(binary), "--restore"], check=True)
-    for path in (autostart, launcher, binary):
+    for path in (autostart, launcher, icon, binary):
         path.unlink(missing_ok=True)
     print("Uninstalled. The settings directory was retained.")
 

@@ -62,6 +62,10 @@ def main():
     with tempfile.TemporaryDirectory(prefix="key-layout-deb-") as temporary:
         tree = Path(temporary) / "key-layout"
         copy(binary, tree / "usr/bin/key-layout", 0o755)
+        copy(
+            ROOT / "assets/key-layout.svg",
+            tree / "usr/share/icons/hicolor/scalable/apps/key-layout.svg",
+        )
         copy(ROOT / "README.md", tree / "usr/share/doc/key-layout/README.md")
 
         write(
@@ -72,7 +76,7 @@ def main():
             "Comment=Customize keyboard keys\n"
             "Exec=/usr/bin/key-layout\n"
             "TryExec=/usr/bin/key-layout\n"
-            "Icon=input-keyboard\n"
+            "Icon=key-layout\n"
             "Terminal=false\n"
             "StartupNotify=true\n"
             "Categories=Settings;HardwareSettings;\n",
