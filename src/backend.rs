@@ -233,7 +233,10 @@ fn expected_keysyms(mapping: &str, width: usize) -> Result<Vec<c_ulong>, String>
             let name = CString::new(name).map_err(|error| error.to_string())?;
             let keysym = unsafe { XStringToKeysym(name.as_ptr()) };
             if keysym == 0 {
-                Err(format!("Unknown X11 key symbol: {}", name.to_string_lossy()))
+                Err(format!(
+                    "Unknown X11 key symbol: {}",
+                    name.to_string_lossy()
+                ))
             } else {
                 Ok(keysym)
             }
@@ -256,9 +259,7 @@ fn live_drifted_keycodes(display: *mut c_void, rules: &Rules) -> Result<Vec<u16>
     }
     let count = i32::from(last - first + 1);
     let mut width = 0;
-    let keysyms = unsafe {
-        XGetKeyboardMapping(display, first as c_uchar, count, &mut width)
-    };
+    let keysyms = unsafe { XGetKeyboardMapping(display, first as c_uchar, count, &mut width) };
     if keysyms.is_null() {
         return Err("Cannot read the current X11 keyboard mapping".into());
     }
